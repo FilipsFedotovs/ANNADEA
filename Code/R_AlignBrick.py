@@ -46,7 +46,6 @@ class bcolors:   #We use it for the interface
 
 print('                                                                                                                                    ')
 print('                                                                                                                                    ')
-exit()
 print(bcolors.HEADER+"########################################################################################################"+bcolors.ENDC)
 print(bcolors.HEADER+"#########                 Initialising ANNDEA ECC Alignment module                       ###############"+bcolors.ENDC)
 print(bcolors.HEADER+"#########################              Written by Filips Fedotovs              #########################"+bcolors.ENDC)
