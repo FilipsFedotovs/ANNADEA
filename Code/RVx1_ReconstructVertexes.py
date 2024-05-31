@@ -663,11 +663,11 @@ while Status<len(Program):
                     else:
                       Compression_Ratio=0
                     print(UF.TimeStamp(),'Set',str(i),'and subset', str(j), 'compression ratio is ', Compression_Ratio, ' %',bcolors.ENDC)
-                    fractions=int(math.ceil(Records_After_Compression/MaxSeeds))
+                    fractions=int(math.ceil(Records_After_Compression/PM.MaxSeedsPerVxPool))
                     Meta.JobSets[i][3].append(fractions)
                     for k in range(0,fractions):
                      new_output_file_location=EOS_DIR+'/ANNDEA/Data/REC_SET/Temp_RVx1a'+'_'+RecBatchID+'_'+str(i)+'/RVx1a_'+RecBatchID+'_SelectedSeeds_'+str(i)+'_'+str(j)+'_'+str(k)+'.csv'
-                     result[(k*MaxSeeds):min(Records_After_Compression,((k+1)*MaxSeeds))].to_csv(new_output_file_location,index=False)
+                     result[(k*PM.MaxSeedsPerVxPool):min(Records_After_Compression,((k+1)*PM.MaxSeedsPerVxPool))].to_csv(new_output_file_location,index=False)
                 print(UF.PickleOperations(RecOutputMeta,'w', Meta)[1])
         if Log:
          try:
