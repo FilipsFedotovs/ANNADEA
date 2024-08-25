@@ -196,7 +196,8 @@ for k in range(0,Z_ID_Max):
                             for edge in range(len(HC.edges)):
                                 combined_weight_list.append(HC.edges[edge]+w[edge]) #Join the Hit Pair classification back to the hit pairs
                             combined_weight_list=pd.DataFrame(combined_weight_list, columns = ['l_HitID','r_HitID','link_strength'])
-                            _Tot_Hits=pd.merge(HC.HitPairs, combined_weight_list, how="inner", on=['l_HitID','r_HitID'])
+                            _HitPairs=pd.DataFrame(HC.HitPairs, columns=['l_HitID','l_z','r_HitID','r_z'])
+                            _Tot_Hits=pd.merge(_HitPairs, combined_weight_list, how="inner", on=['l_HitID','r_HitID'])
                             _Tot_Hits.drop(_Tot_Hits.index[_Tot_Hits['link_strength'] <= Acceptance], inplace = True) #Remove all hit pairs that fail GNN classification
                         else:
                             _Tot_Hits=HC.HitPairs
@@ -258,77 +259,125 @@ for k in range(0,Z_ID_Max):
                                         _Tot_Hits_Predator=[]
                                         #Bellow we build all possible hit combinations that can occur in the data
                                         print(UI.TimeStamp(),'Building all possible track combinations...')
+                                        #print(_Tot_Hits_PCopy)
+                                        #import datetime
+                                        #T1=datetime.datetime.now()
                                         for prd in range(len(_Tot_Hits_PCopy)):
-                                            print(UI.TimeStamp(),'Progress is ',round(100*prd/len(_Tot_Hits_PCopy),2), '%',end="\r", flush=True)
+                                        #for prd in range(4):
+                                            #print(UI.TimeStamp(),'Progress is ',round(100*prd/len(_Tot_Hits_PCopy),2), '%',end="\r", flush=True)
                                             Predator=_Tot_Hits_PCopy[prd]
 
-                                            for pry in range(len(_Tot_Hits_PCopy)):
+                                            for pry in range(prd+1,len(_Tot_Hits_PCopy)):
                                                    #This function combines two segment object. Example: Segment 1 is [[a, _ ,b ,_ ,_ ][0.9,0.0,0.9,0.0,0.0]];  Segment 2 is [[a, _ ,c ,_ ,_ ][0.9,0.0,0.8,0.0,0.0]]; Segment 3 is [[_, d ,b ,_ ,_ ][0.0,0.8,0.8,0.0,0.0]]
                                                    #In order to combine segments we have to have at least one common hit and no clashes. Segment 1 and 2 have a common hit a, but their third plates clash. Segment 1 can be combined with segment 3 which yields: [[a, d ,b ,_ ,_ ][0.8,0.0,1.7,0.0,0.0]]
                                                    #Please note that if combination occurs then the hit weights combine together too
-                                                   Result=InjectHit(Predator,_Tot_Hits_PCopy[pry],False)
-                                                   Predator=Result[0]
+                                                   Predator=InjectHit(Predator,_Tot_Hits_PCopy[pry],False)[0]
+                                                   #print(Predator)
+                                                   #x=input()
                                             _Tot_Hits_Predator.append(Predator)
+                                        # print(_Tot_Hits_Predator[0])
+                                        # print(_Tot_Hits_Predator[1])
+                                        # print(_Tot_Hits_Predator[2])
+                                        # print(_Tot_Hits_Predator[3])
+
+
+
+                                        #print(datetime.datetime.now()-T1)
+                                        #print(len(_Tot_Hits_Predator))
+                                        #x=input()
                                         #We calculate the average value of the segment weight
                                         for s in _Tot_Hits_Predator:
                                             s=s[0].append(mean(s.pop(1)))
+                                        # print(_Tot_Hits_Predator[0])
+                                        # print(_Tot_Hits_Predator[1])
+                                        # print(_Tot_Hits_Predator[2])
+                                        # print(_Tot_Hits_Predator[3])
+                                        # print('-------------')
                                         _Tot_Hits_Predator = [item for l in _Tot_Hits_Predator for item in l]
+                                        # print(_Tot_Hits_Predator[0])
+                                        # print(_Tot_Hits_Predator[1])
+                                        # print(_Tot_Hits_Predator[2])
+                                        # print(_Tot_Hits_Predator[3])
+                                        # print('-------------')
                                         for s in range(len(_Tot_Hits_Predator)):
                                             for h in range(len(_Tot_Hits_Predator[s])):
                                                 if _Tot_Hits_Predator[s][h] =='_':
                                                     _Tot_Hits_Predator[s][h]='H_'+str(s) #Giving holes a unique name to avoid problems later
+                                        # print(_Tot_Hits_Predator[0])
+                                        # print(_Tot_Hits_Predator[1])
+                                        # print(_Tot_Hits_Predator[2])
+                                        # print(_Tot_Hits_Predator[3])
+                                        # print('-------------')
 
                                         column_no=len(_Tot_Hits_Predator[0])-1
                                         columns=[]
-                                        print(UI.TimeStamp(),'Applying physical assumptions...')
-                                        #Here we making sure that the tracks satisfy minimum fit requirements
-                                        q_itr=0
-                                        for thp in _Tot_Hits_Predator:
-                                            print(UI.TimeStamp(),'Progress is ',round(100*q_itr/len(_Tot_Hits_Predator),2), '%',end="\r", flush=True)
-                                            q_itr+=1
-                                            fit_data_x=[]
-                                            fit_data_y=[]
-                                            fit_data_z=[]
-                                            for cc in range(column_no):
-                                                for td in temp_data_list:
-                                                    if td[0][0]=='H':
-                                                        break
-                                                    elif td[0]==thp[cc]:
-                                                        fit_data_x.append(td[1])
-                                                        fit_data_y.append(td[2])
-                                                        fit_data_z.append(td[3])
-                                                        break
 
-                                            line_x=np.polyfit(fit_data_z,fit_data_x,1)
-                                            line_y=np.polyfit(fit_data_z,fit_data_y,1)
-                                            x_residual=[x * line_x[0] for x in fit_data_z]
-                                            x_residual=[x + line_x[1] for x in x_residual]
-                                            x_residual=(np.array(x_residual)-np.array(fit_data_x))
-                                            x_residual=[x ** 2 for x in x_residual]
+                                        Residual_Cut=(TrackFitCutRes>min(stepX,stepY) and TrackFitCutSTD>min(stepX,stepY) and TrackFitCutMRes>min(stepX,stepY))
+                                        if Residual_Cut==False:
+                                            print(UI.TimeStamp(),'Applying physical assumptions...')
+                                            #Here we making sure that the tracks satisfy minimum fit requirements
+                                            q_itr=0
+                                            for thp in _Tot_Hits_Predator:
+                                                print(UI.TimeStamp(),'Progress is ',round(100*q_itr/len(_Tot_Hits_Predator),2), '%',end="\r", flush=True)
+                                                q_itr+=1
+                                                fit_data_x=[]
+                                                fit_data_y=[]
+                                                fit_data_z=[]
+                                                for cc in range(column_no):
+                                                    for td in temp_data_list:
+                                                        if td[0][0]=='H':
+                                                            break
+                                                        elif td[0]==thp[cc]:
+                                                            fit_data_x.append(td[1])
+                                                            fit_data_y.append(td[2])
+                                                            fit_data_z.append(td[3])
+                                                            break
 
-                                            y_residual=[y * line_y[0] for y in fit_data_z]
-                                            y_residual=[y + line_y[1] for y in y_residual]
-                                            y_residual=(np.array(y_residual)-np.array(fit_data_y))
-                                            y_residual=[y ** 2 for y in y_residual]
-                                            residual=np.array(y_residual)+np.array(x_residual)
-                                            residual=np.sqrt(residual)
-                                            RES=sum(residual)/len(fit_data_x)
-                                            STD=np.std(residual)
-                                            MRES=max(residual)
-                                            _Tot_Hits_Predator[_Tot_Hits_Predator.index(thp)]+=[RES,STD,MRES]
+                                                line_x=np.polyfit(fit_data_z,fit_data_x,1)
+                                                line_y=np.polyfit(fit_data_z,fit_data_y,1)
+                                                x_residual=[x * line_x[0] for x in fit_data_z]
+                                                x_residual=[x + line_x[1] for x in x_residual]
+                                                x_residual=(np.array(x_residual)-np.array(fit_data_x))
+                                                x_residual=[x ** 2 for x in x_residual]
 
+                                                y_residual=[y * line_y[0] for y in fit_data_z]
+                                                y_residual=[y + line_y[1] for y in y_residual]
+                                                y_residual=(np.array(y_residual)-np.array(fit_data_y))
+                                                y_residual=[y ** 2 for y in y_residual]
+                                                residual=np.array(y_residual)+np.array(x_residual)
+                                                residual=np.sqrt(residual)
+                                                RES=sum(residual)/len(fit_data_x)
+                                                STD=np.std(residual)
+                                                MRES=max(residual)
+                                                _Tot_Hits_Predator[_Tot_Hits_Predator.index(thp)]+=[RES,STD,MRES]
+                                        # print(_Tot_Hits_Predator[0])
+                                        # print(_Tot_Hits_Predator[1])
+                                        # print(_Tot_Hits_Predator[2])
+                                        # print(_Tot_Hits_Predator[3])
+                                        # print('-------------')
 
                                         #converting the list objects into Pandas dataframe
                                         for c in range(column_no):
                                             columns.append(str(c))
-                                        columns+=['average_link_strength','RES','STD','MRES']
+                                        columns+=['average_link_strength']
+                                        if Residual_Cut==False:
+                                            columns+=['RES','STD','MRES']
                                         _Tot_Hits_Predator=pd.DataFrame(_Tot_Hits_Predator, columns = columns)
-                                        _Tot_Hits_Predator=_Tot_Hits_Predator.drop(_Tot_Hits_Predator.index[(_Tot_Hits_Predator['RES'] > TrackFitCutRes) | (_Tot_Hits_Predator['STD'] > TrackFitCutSTD) | (_Tot_Hits_Predator['MRES'] > TrackFitCutMRes)]) #Remove tracks with a bad fit
+                                        if Residual_Cut==False:
+                                            _Tot_Hits_Predator=_Tot_Hits_Predator.drop(_Tot_Hits_Predator.index[(_Tot_Hits_Predator['RES'] > TrackFitCutRes) | (_Tot_Hits_Predator['STD'] > TrackFitCutSTD) | (_Tot_Hits_Predator['MRES'] > TrackFitCutMRes)]) #Remove tracks with a bad fit
+
                                         KeepTracking=len(_Tot_Hits_Predator)>0
                                         _Tot_Hits_Predator.sort_values(by = ['average_link_strength'], ascending=[False],inplace=True) #Keep all the best hit combinations at the top
-                                        _Tot_Hits_Predator=_Tot_Hits_Predator.drop(['average_link_strength','RES','STD','MRES'],axis=1) #We don't need the segment fit anymore
+                                        _Tot_Hits_Predator=_Tot_Hits_Predator.drop(['average_link_strength'],axis=1) #We don't need the segment fit anymore
+                                        if Residual_Cut==False:
+                                            _Tot_Hits_Predator=_Tot_Hits_Predator.drop(['RES','STD','MRES'],axis=1) #We don't need the segment fit anymore
+                                        # print(_Tot_Hits_Predator)
+                                        # print('-------------')
                                         for c in range(column_no):
                                             _Tot_Hits_Predator.drop_duplicates(subset=[str(c)], keep='first', inplace=True) #Iterating over hits, make sure that they belong to the best-fit track
+                                        # print(_Tot_Hits_Predator)
+                                        # print('-------------')
+                                        # exit()
                                         _Tot_Hits_Predator=_Tot_Hits_Predator.values.tolist()
                                         for seg in range(len(_Tot_Hits_Predator)):
                                             _Tot_Hits_Predator[seg]=[s for s in _Tot_Hits_Predator[seg] if ('H' in s)==False] #Remove holes from the track representation
